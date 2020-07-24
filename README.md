@@ -55,26 +55,29 @@ Example Configuration
 
 dev /dev/input/by-id/usb-Gravis_GamePad_Pro_USB-event-joystick
 
-# Media Play/Pause = Green
+# Green → Media Play/Pause
 if type=1 code=306 value=1 then: xdotool key XF86AudioPlay
 
-# Volume Up = D-Pad Up
+# D-Pad Up → Volume Up
 if type=3 code=1 value=0 then: xdotool key XF86AudioRaiseVolume
-# Volume Down = D-Pad Down
+# D-Pad Down → Volume Down
 if type=3 code=1 value=255 then: xdotool key XF86AudioLowerVolume
 
-# Keyboard Left = D-Pad Left
+# D-Pad Left → Keyboard Left
 if type=3 code=0 value=0 then: xdotool key Left
-# Keyboard Right = D-Pad Right
+# D-Pad Right → Keyboard Right
 if type=3 code=0 value=255 then: xdotool key Right
 
-# Media Prev = L1
+# L1 → Media Prev
 if type=1 code=308 value=1 then: xdotool key XF86AudioPrev
-# Media Next = R1
+# R1 → Media Next
 if type=1 code=309 value=1 then: xdotool key XF86AudioNext
 
-# Suspend system = Start
+# Start → Suspend system
 if type=1 code=313 value=1 then: systemctl -i suspend
+
+# R2 → kill Chrome :)
+if type=1 code=311 value=1 then: killall chrome
 ```
 
 License
