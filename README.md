@@ -1,7 +1,7 @@
 This is a simple utility that maps Linux `/dev/input` events to shell commands. Note that this will only work on OSes that support Linux's `/dev/input` interface. **Windows and macOS definitely don't**, though Windows might if you run it through WSL.
 
 Installation
-------------
+============
 
 Recent Rust is required. If you don't have it, you can quickly install a Rust toolchain with this command:
 
@@ -22,7 +22,7 @@ cargo install --path input2cmds
 ```
 
 Quick Start
------------
+===========
 
 (The below information is also available by running `input2cmds` with no arguments.)
 
@@ -47,7 +47,7 @@ command has fully executed before executing any further commands (unless you
 put a & on the end).
 
 Example Configuration
-=====================
+---------------------
 
 ```ini
 # Lines beginning with # are comments, which are ignored by input2cmds and
@@ -78,6 +78,6 @@ if type=1 code=313 value=1 then: systemctl -i suspend
 ```
 
 License
--------
+=======
 
 This program is distributed under the zlib license. This puts very few restrictions on use. See [`LICENSE.md`](LICENSE.md) for the complete, very short text of the copyright notice and license.
