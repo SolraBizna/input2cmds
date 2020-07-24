@@ -49,7 +49,7 @@ put a & on the end).
 Example Configuration
 =====================
 
-```
+```ini
 # Lines beginning with # are comments, which are ignored by input2cmds and
 # exist only to inform the person reading the file.
 
