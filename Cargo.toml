@@ -1,0 +1,16 @@
+[package]
+name = "input2cmds"
+version = "0.9.0"
+authors = ["pi"]
+edition = "2018"
+description = "A simple utility that maps Linux /dev/input events to shell commands."
+readme = "README.md"
+homepage = "https://github.com/SolraBizna/input2cmds/"
+repository = "https://github.com/SolraBizna/input2cmds/"
+license = "Zlib"
+keywords = ["linux"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+getopts = "0.2"
+libc = "0.2"
