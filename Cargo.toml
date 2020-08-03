@@ -1,7 +1,7 @@
 [package]
 name = "input2cmds"
 version = "0.9.0"
-authors = ["pi"]
+authors = ["Solra Bizna <solra@bizna.name>"]
 edition = "2018"
 description = "A simple utility that maps Linux /dev/input events to shell commands."
 readme = "README.md"
