@@ -240,7 +240,7 @@ put a & on the end).
     let mut matches = Vec::new();
     for conf in free.into_iter() {
         if let Err(x) = load_config(&conf, &event_tx, &mut matches) {
-            eprintln!("{}", x);
+            eprintln!("{:?}", x);
             exit(1);
         }
     }
