@@ -4,12 +4,14 @@
 //! [1]: https://github.com/SolraBizna/input2cmds/blob/master/README.md
 
 use std::{
-    io::{Read, BufRead, BufReader, Error, ErrorKind},
+    io::{Read, BufRead, BufReader},
     process::{exit, Command},
     sync::mpsc::{channel, Sender},
     thread::spawn,
 };
 use libc::input_event as InputEvent;
+
+use anyhow::{anyhow, Context};
 
 /// Contains a parsed "if ... then ..." line, describing a command to execute
 /// if a certain event is seen.
@@ -33,13 +35,13 @@ struct InputMatch {
 /// device and spawns a reader thread that sends events via `event_sender`. For
 /// every "if" directive, adds a match to the `matches` vector.
 fn load_config(path: &str, event_sender: &Sender<InputEvent>,
-               matches: &mut Vec<InputMatch>) -> std::io::Result<()> {
-    let f = std::fs::File::open(path)?;
+               matches: &mut Vec<InputMatch>) -> anyhow::Result<()> {
+    let f = std::fs::File::open(path).context("opening the file")?;
     let reader = BufReader::new(f);
     let mut line_number: usize = 0;
     for line in reader.lines() {
         line_number = line_number + 1;
-        let line = line?;
+        let line = line.context("reading from the file")?;
         let line = line.split('#').next().unwrap_or("");
         let (line, colon) = if let Some(colon_pos) = line.find(':') {
             let mut colon = &line[colon_pos+1..];
@@ -58,16 +60,13 @@ fn load_config(path: &str, event_sender: &Sender<InputEvent>,
         match splat[0] {
             "dev" => {
                 if splat.len() != 2 {
-                    return Err(
-                        Error::new(ErrorKind::Other,
-                                   format!("{}:{}: dev wants only one \
-                                            parameter",
-                                           path, line_number,))
-                    )
+                    return Err(anyhow!("{}:{}: dev wants only one parameter",
+                                       path, line_number));
                 }
                 let event_sender = event_sender.clone();
                 let dev_path = splat[1].to_owned();
-                let dev_file = std::fs::File::open(&dev_path)?;
+                let dev_file = std::fs::File::open(&dev_path)
+                    .with_context(|| format!("opening device {:?}",dev_path))?;
                 spawn(move || {
                     let error = format!("Error reading from {:?}", dev_path);
                     let mut dev_file = BufReader::new(dev_file);
@@ -101,22 +100,14 @@ fn load_config(path: &str, event_sender: &Sender<InputEvent>,
                     rest = &rest[1..];
                     if el.starts_with("type=") {
                         if wants_type.is_some() {
-                            let err = format!("{}:{}: multiple \"type=\"s",
-                                              path, line_number);
-                            return Err(
-                                Error::new(ErrorKind::Other,
-                                                    err)
-                            )
+                            return Err(anyhow!("{}:{}: multiple \"type=\"s",
+                                               path, line_number));
                         }
                         let parsed = &el[5..].parse();
                         match parsed {
                             Err(_) => {
-                                let err = format!("{}:{}: invalid \"type=\"",
-                                                  path, line_number);
-                                return Err(
-                                    Error::new(ErrorKind::Other,
-                                                        err)
-                                )
+                                return Err(anyhow!("{}:{}: invalid \"type=\"",
+                                                   path, line_number));
                             },
                             Ok(x) => {
                                 wants_type = Some(*x);
@@ -125,22 +116,14 @@ fn load_config(path: &str, event_sender: &Sender<InputEvent>,
                     }
                     else if el.starts_with("code=") {
                         if wants_code.is_some() {
-                            let err = format!("{}:{}: multiple \"code=\"",
-                                              path, line_number);
-                            return Err(
-                                Error::new(ErrorKind::Other,
-                                                    err)
-                            )
+                            return Err(anyhow!("{}:{}: multiple \"code=\"",
+                                               path, line_number));
                         }
                         let parsed = &el[5..].parse();
                         match parsed {
                             Err(_) => {
-                                let err = format!("{}:{}: invalid \"code=\"s",
-                                                  path, line_number);
-                                return Err(
-                                    Error::new(ErrorKind::Other,
-                                                        err)
-                                )
+                                return Err(anyhow!("{}:{}: invalid \"code=\"s",
+                                                   path, line_number));
                             },
                             Ok(x) => {
                                 wants_code = Some(*x);
@@ -149,22 +132,14 @@ fn load_config(path: &str, event_sender: &Sender<InputEvent>,
                     }
                     else if el.starts_with("value=") {
                         if wants_value.is_some() {
-                            let err = format!("{}:{}: multiple \"value=\"s",
-                                              path, line_number);
-                            return Err(
-                                Error::new(ErrorKind::Other,
-                                                    err)
-                            )
+                            return Err(anyhow!("{}:{}: multiple \"value=\"s",
+                                               path, line_number));
                         }
                         let parsed = &el[6..].parse();
                         match parsed {
                             Err(_) => {
-                                let err = format!("{}:{}: invalid \"value=\"",
-                                                  path, line_number);
-                                return Err(
-                                    Error::new(ErrorKind::Other,
-                                                        err)
-                                )
+                                return Err(anyhow!("{}:{}: invalid \"value=\"",
+                                                   path, line_number));
                             },
                             Ok(x) => {
                                 wants_value = Some(*x);
@@ -172,29 +147,20 @@ fn load_config(path: &str, event_sender: &Sender<InputEvent>,
                         }
                     }
                     else {
-                        let err = format!("{}:{}: wanted \"type=\", \
-                                           \"code=\", \"value\"=, or \"then\" \
-                                           after \"if\", saw {:?}",
-                                          path, line_number, el);
-                        return Err(
-                            Error::new(ErrorKind::Other, err)
-                        )
+                        return Err(anyhow!("{}:{}: wanted \"type=\", \
+                                            \"code=\", \"value\"=, or \
+                                            \"then\" after \"if\", saw {:?}",
+                                           path, line_number, el));
                     }
                 }
                 rest = &rest[1..]; // skip "then"
                 if rest.is_empty() {
-                    return Err(
-                        Error::new(ErrorKind::Other,
-                                   format!("{}:{}: \"if\" needs a \"then\"",
-                                           path, line_number,))
-                    )
+                    return Err(anyhow!("{}:{}: \"if\" needs a \"then\"",
+                                       path, line_number));
                 }
                 else if rest.len() >= 2 {
-                    return Err(
-                        Error::new(ErrorKind::Other,
-                                   format!("{}:{}: put a colon after \"then\"",
-                                           path, line_number,))
-                    )
+                    return Err(anyhow!("{}:{}: put a colon after \"then\"",
+                                       path, line_number));
                 }
                 matches.push(InputMatch {
                     wants_type, wants_code, wants_value,
@@ -202,11 +168,8 @@ fn load_config(path: &str, event_sender: &Sender<InputEvent>,
                 })
             },
             x => {
-                return Err(
-                    Error::new(ErrorKind::Other,
-                               format!("{}:{}: Unknown config directive {:?}",
-                                       path, line_number, x))
-                )
+                return Err(anyhow!("{}:{}: Unknown config directive {:?}",
+                                   path, line_number, x));
             },
         }
     }
@@ -277,7 +240,7 @@ put a & on the end).
     let mut matches = Vec::new();
     for conf in free.into_iter() {
         if let Err(x) = load_config(&conf, &event_tx, &mut matches) {
-            eprintln!("Error loading configuration file {:?}: {}", conf, x);
+            eprintln!("{}", x);
             exit(1);
         }
     }
