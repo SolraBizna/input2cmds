@@ -36,7 +36,8 @@ struct InputMatch {
 /// every "if" directive, adds a match to the `matches` vector.
 fn load_config(path: &str, event_sender: &Sender<InputEvent>,
                matches: &mut Vec<InputMatch>) -> anyhow::Result<()> {
-    let f = std::fs::File::open(path).context("opening the file")?;
+    let f = std::fs::File::open(path)
+        .with_context(|| format!("opening {:?}",path))?;
     let reader = BufReader::new(f);
     let mut line_number: usize = 0;
     for line in reader.lines() {
